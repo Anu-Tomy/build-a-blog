@@ -38,12 +38,21 @@ class Handler(webapp2.RequestHandler):
 
 
 class MainPage(Handler):
+    def render_front(self, title="", art= "", error=""):
+        self.render("front.html",title= title, art=art, error=error)
+
     def get(self):
-        self.render("front.html")
+        self.render_front()
 
     def post(self):
         title = self.request.get("title")
         art = self.request.get("art")
+
+        if title and art:
+            self.write("Thanks!")
+        else:
+            error = "A title and some artwork are required!"
+            self.render_front(title, art, error)    
 
 app = webapp2.WSGIApplication([
     ('/', MainPage)
