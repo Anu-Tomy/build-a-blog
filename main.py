@@ -25,6 +25,10 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
                                 autoescape = True)
 
+def get_posts(lim, off):
+    query = BlogPost.all().order('-created')
+    return query.fetch(limit=lim, offset=off)
+
 class Handler(webapp2.RequestHandler):
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
@@ -36,33 +40,71 @@ class Handler(webapp2.RequestHandler):
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
 
-class Art(db.Model):
-    title = db.StringProperty(required = True)
-    art = db.TextProperty(required = True)
+class BlogPost(db.Model):
+    subject = db.StringProperty(required = True)
+    content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
+    last_modified = db.DateTimeProperty(auto_now = True)
 
+class MainHandler(Handler):
+    def render_bloghome(self, subject="", content= "", error="",posts = "",next_page="",prev_page=""):
+        page = self.request.get("page")
+        page_limit = 5
+        offset = 0
+        page = page and int(page)
+        if page:
+            offset = (page-1)*page_limit
+        else:
+            page = 1
+        posts = get_posts(int(page_limit), int(offset))
+        prev_page = None
+        next_page = None
+        if page > 1:
+            prev_page= page-1
+        if len(posts) == page_limit and BlogPost.all().count() > offset+page_limit:
+            next_page = page + 1
 
-class MainPage(Handler):
-    def render_front(self, title="", art= "", error=""):
-        arts = db.GqlQuery("Select * from Art ORDER BY created DESC")
-        self.render("front.html",title= title, art=art, error=error, arts = arts)
+        self.render("bloghome.html", subject=subject, content = content, error=error, posts=posts, next_page=next_page, prev_page=prev_page)
 
     def get(self):
-        self.render_front()
+        self.render_bloghome()
+
+class BlogHandler(Handler):
+    def get(self):
+        self.render("bloghome.html")
+
+class NewPostHandler(Handler):
+    def render_blogpost(self, subject="", content="", error=""):
+        self.render("blogpost.html", subject=subject, content = content, error=error)
+
+    def get(self):
+        self.render_blogpost()
 
     def post(self):
-        title = self.request.get("title")
-        art = self.request.get("art")
+        subject = self.request.get("subject")
+        content = self.request.get("content")
 
-        if title and art:
-            a = Art(title = title, art = art)
-            a.put()
-
-            self.redirect("/")
+        if subject and content:
+            a = BlogPost(subject = subject, content = content)
+            a.put() #store entity in the database
+            id = a.key().id()
+            self.redirect("/blog/"+ str(id))
         else:
-            error = "A title and some artwork are required!"
-            self.render_front(title, art, error)
+            error = "A subject and content are required!"
+            self.render_blogpost(subject, content, error)
+
+class ViewPostHandler(Handler):
+    def get(self, id):
+        post = BlogPost.get_by_id(int(id))
+
+        if not post:
+            self.render("permalink.html", post = post, error = "This blog entry does NOT exist")
+        else:
+            self.render("permalink.html", post = post)
+
 
 app = webapp2.WSGIApplication([
-    ('/', MainPage)
+    ('/', MainHandler,('/blog', MainHandler),
+    ('/blog/newpost', NewPostHandler),
+    webapp2.Route('/blog/<id:\d+>', ViewPostHandler))
 ], debug=True)
