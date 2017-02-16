@@ -47,7 +47,7 @@ class BlogPost(db.Model):
     last_modified = db.DateTimeProperty(auto_now = True)
 
 class MainHandler(Handler):
-    def render_bloghome(self, subject="", content= "", error="",posts = "",next_page="",prev_page=""):
+    def render_bloghome(self, subject="", content= "", error="", posts = "", next_page="", prev_page=""):
         page = self.request.get("page")
         page_limit = 5
         offset = 0
@@ -102,9 +102,9 @@ class ViewPostHandler(Handler):
         else:
             self.render("permalink.html", post = post)
 
-
 app = webapp2.WSGIApplication([
-    ('/', MainHandler,('/blog', MainHandler),
+    ('/', MainHandler),
+    ('/blog', MainHandler),
     ('/blog/newpost', NewPostHandler),
-    webapp2.Route('/blog/<id:\d+>', ViewPostHandler))
+    webapp2.Route('/blog/<id:\d+>', ViewPostHandler)
 ], debug=True)
