@@ -6,20 +6,21 @@
         {% set id = post.key().id() %}
         {% set link = "/blog/" ~ id %}
         <a href={{link}}><div class="blogpost-subject">{{post.subject}}</div></a>
-        {{post.created.strftime("%b %d, %Y")}}
+
 
         <pre class="blogpost-content">{{post.content}}</pre> <!-- "<pre> preserves the formatting of whatever is between the tags" -->
+        {{post.created.strftime("%b %d, %Y")}}
     </div>
 {% endfor %}
 <br></br>
 <footer>
 {% if prev_page %}
-    <a href="/blog?page={{prev_page}}">prev</a>
+    <a href="/blog?page={{prev_page}}">Prev</a>
 {% endif %}
 
-    &nbsp;&nbsp; | &nbsp;&nbsp;
+
 {% if next_page %}
-    <a href="/blog?page={{next_page}}">next</a>
+    <a href="/blog?page={{next_page}}">Next</a>
 {% endif %}
 
 </footer>
